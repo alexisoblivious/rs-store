@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Alexis Final</title>
+  </head>
+  <body>
+    <h1>Merchant's Exchange</h1>
+    <span id="dateArea" style="float: right">Date/Time</span>
+    <br />
+    <span style="float: right">
+      Currency:
+      <img class="currencyFlag" src="img/gp-icon.jpg" style="width: 15px" />
+      <select id="currencySelector" onchange="convertCurrency()">
+        <option selected value="CAD">CAD</option>
+        <option value="USD">USD</option>
+        <option value="GP">Gold Pieces</option>
+      </select>
+    </span>
+    <fieldset>
+      <legend>Select Items</legend>
+      <p>
+        Item ID: <input type="text" id="addItemId" />
+        &nbsp;
+        <span id="addIDValidationMessage"></span>
+      </p>
+      <p>
+        Qty: <input type="number" id="addItemQty" />
+        &nbsp;
+        <span id="addQtyValidationMessage"></span>
+      </p>
+      <p>
+        
+        <input type="button" value="Item Details" onclick="showItemDetails()" />
+        <input type="button" value="Add Item" onclick="addToCart()" />
+        <input type="button" value="Remove Item" onclick="removeItem()" />
+      </p>
+      <div id="selectOutput" class="itemDetailsGrid"></div>
+    </fieldset>
+    <br />
+    <fieldset>
+      <legend>Your Cart</legend>
+      <span><strong>| ID | Price | Qty | Processing Fee | Item Subtotal |</strong></span>
+      <br />
+      <div id="cartOutput"></div>
+      <br />
+      <div id="cartCheckout"></div>
+    </fieldset>
+    <br />
+    <fieldset>
+      <legend>Store Items</legend>
+      <select id="displayFilter" onchange="displayCertainStoreItems()">
+        <option>All</option>
+        <option>weapon</option>
+        <option>armour</option>
+        <option>potion</option>
+      </select>
+      <br />
+
+      <div id="inventoryOutput"></div>
+    </fieldset>
+    <br />
+    <fieldset>
+      <legend>Review an Item</legend>
+      <p>Product ID: <input type="text" id="reviewId" />&nbsp;<span id="reviewIdMsg"></span></p>
+      <p>Your Name: <input type="text" id="customerNameInput" size="30" /></p>
+      <p>
+        Rating: <input type="number" id="leaveRatingInput" />&nbsp;<span
+          id="addRatingValidationMessage"></span>
+      </p>
+      <p>Review: <input type="text" id="leaveReviewInput" size="100" /></p>
+
+      <p><input type="button" value="Review" onclick="leaveItemReview()" /></p>
+    </fieldset>
+
+    <!-- Javascript -->
+    <script>
+      //global variables
+      let cart = [];
+
+      let cartItems = [];
+
+      //store items constructor function
+      function StoreItem(
+        id,
+        name,
+        price,
+        quantityAvailable,
+        maxPerClient,
+        category,
+        processingFee,
+        description,
+        reviews,
+        image,
+        qty,
+        subtotal
+      ) {
+        this.id = id;
+        this.name = name;
+        this.price = price;
+        this.quantityAvailable = quantityAvailable;
+        this.maxPerClient = maxPerClient;
+        this.category = category;
+        this.processingFee = processingFee;
+        this.description = description;
+        this.reviews = reviews || [];
+        this.image = image;
+        this.qty = qty;
+        this.subtotal = subtotal;
+      }
+
+      //reviews array constructor
+      function Review(rating, customerName, description) {
+        this.rating = rating;
+        this.customerName = customerName;
+        this.description = description;
+      }
+
+      const reviews = [
+        new Review(4, "John", "Great product, highly recommended!"),
+        new Review(5, "Jane", "I love this item, it's perfect for my needs!"),
+        new Review(2, "Jim", "kinda weak but whatever its cheap!"),
+        new Review(5, "Jill", "nothing can stop my sorcerer now"),
+
+        new Review(
+          3,
+          "Juan",
+          "I just got it because it was pretty and matched my characters boots"
+        ),
+        new Review(5, "Jada", "I like it picasso!"),
+        new Review(2, "Jorge", "mid"),
+        new Review(1, "Jeff", "weak!"),
+
+        new Review(2, "Jordan", "not bad"),
+        new Review(4, "Jake", "I love this "),
+        new Review(5, "Juliet", "yo that jacket is tight, nawmeann!"),
+        new Review(5, "Jae", "it's perfect"),
+
+        new Review(1, "Jon", "doent work for my build"),
+        new Review(1, "June", "i want my money back!"),
+        new Review(5, "Jess", "love love love"),
+        new Review(1, "Jesus", "I died for your sins, and THIS is how you repay me?!"),
+
+        new Review(2, "Joe", "kinda meh but not that bad for the price"),
+        new Review(2, "Julian", "doesnt even give that much vitality"),
+        new Review(5, "Jackson", "Got this a while back and it's the ONLY helmet I use now!"),
+        new Review(5, "James", "best amulet in the game"),
+
+        new Review(5, "Jacob", "Fantastic"),
+        new Review(3, "Jessica", "it aight"),
+        new Review(5, "Jet", "this helm looks sick on my crusader"),
+        new Review(2, "Justin", "ayo"),
+
+        new Review(4, "Juniper", "nice bow. works good"),
+        new Review(3, "Julia", "kinda expensive but its pretty"),
+        new Review(1, "Josie", "pretty lame"),
+        new Review(5, "Joel", "yeah bud!"),
+      ];
+
+      // Populate the store items array with at least 15 item objects, with varying data
+      const storeItems = [
+        new StoreItem(1,
+          "Rune Helm",
+          10.99,
+          50,
+          5,
+          "armour",
+          1.99,
+          "restores health",
+          [reviews[0], reviews[26]],
+          "img/product1.jpg",
+          null,
+          null
+        ),
+        new StoreItem(
+          2,
+          "Crooked Broadsword",
+          24.99,
+          100,
+          10,
+          "weapon",
+          2.99,
+          "increased critical damage",
+          [reviews[8], reviews[27]],
+          "img/product2.jpg",
+          null,
+          null
+        ),
+        new StoreItem(
+          3,
+          "Dark Chestplate",
+          15.49,
+          25,
+          2,
+          "armour",
+          0.99,
+          "restores health",
+          [reviews[10]],
+          "img/product3.jpg",
+          null,
+          null
+        ),
+        new StoreItem(
+          4,
+          "Saphire Amulet",
+          19.99,
+          75,
+          5,
+          "armour",
+          1.99,
+          "attack bonus",
+          [reviews[6], reviews[19], reviews[25]],
+          "img/product4.jpg",
+          null,
+          null
+        ),
+        new StoreItem(
+          5,
+          "Silver Britches",
+          7.99,
+          200,
+          20,
+          "armour",
+          0.45,
+          "defense buff",
+          [reviews[11]],
+          "img/product5.jpg",
+          null,
+          null
+        ),
+        new StoreItem(
+          6,
+          "Horned Helm",
+          29.99,
+          50,
+          5,
+          "armour",
+          0.99,
+          "restores health",
+          [reviews[5], reviews[18]],
+          "img/product6.jpg",
+          null,
+          null
+        ),
+        new StoreItem(
+          7,
+          "Mighty Crossbow",
+          12.99,
+          100,
+          10,
+          "weapon",
+          2.99,
+          "attack bonus",
+          [reviews[7], reviews[9], reviews[24]],
+          "img/product7.jpg",
+          null,
+          null
+        ),
+        new StoreItem(
+          8,
+          "Wooden Shield",
+          8.99,
+          150,
+          10,
+          "weapon",
+          1.99,
+          "defense buff",
+          [reviews[4]],
+          "img/product8.jpg",
+          null,
+          null
+        ),
+        new StoreItem(
+          9,
+          "Bone Shield",
+          34.99,
+          25,
+          2,
+          "weapon",
+          1.45,
+          "defense buff",
+          [reviews[15]],
+          "img/product9.jpg",
+          null,
+          null
+        ),
+        new StoreItem(
+          10,
+          "Cracked Broadsword",
+          14.99,
+          75,
+          5,
+          "weapon",
+          1.59,
+          "restores health",
+          [reviews[12], reviews[17]],
+          "img/product10.jpg",
+          null,
+          null
+        ),
+        new StoreItem(
+          11,
+          "Health",
+          9.99,
+          200,
+          20,
+          "potion",
+          1.99,
+          "restores health",
+          [reviews[3]],
+          "img/product11.jpg",
+          null,
+          null
+        ),
+        new StoreItem(
+          12,
+          "Mana Potion",
+          39.99,
+          50,
+          5,
+          "potion",
+          1.99,
+          "restores mana",
+          [reviews[13], reviews[16]],
+          "img/product12.jpg",
+          null,
+          null
+        ),
+        new StoreItem(
+          13,
+          "Brass Helm",
+          22.99,
+          100,
+          10,
+          "armour",
+          2.29,
+          "defense boost",
+          [reviews[14], reviews[22]],
+          "img/product13.jpg",
+          null,
+          null
+        ),
+        new StoreItem(
+          14,
+          "Silver Scimitar",
+          18.99,
+          150,
+          10,
+          "weapon",
+          1.49,
+          "restores mana",
+          [reviews[2], reviews[21]],
+          "img/product14.jpg",
+          null,
+          null
+        ),
+        new StoreItem(
+          15,
+          "Attack Potion",
+          49.99,
+          25,
+          2,
+          "potion",
+          1.99,
+          "attack bonus for duration",
+          [reviews[1], reviews[20], reviews[23]],
+          "img/product15.jpg",
+          null,
+          null
+        ),
+      ];
+
+      let inventoryOutput = document.getElementById("inventoryOutput");
+
+      //initialize pageload function
+      function initialize() {
+        const date = new Date();
+        const month = date.toLocaleString("default", { month: "short" });
+        const day = date.getDate();
+        const hours = date.getHours();
+        const minutes = date.getMinutes().toString().padStart(2, "0");
+        const time = `${hours}:${minutes}`;
+        const dateTimeString = `${month} ${day}, ${time}`;
+
+        const dateTimeDiv = document.getElementById("dateArea");
+        dateTimeDiv.innerHTML = dateTimeString;
+
+        //call the function that will display the store items array
+        displayInventory();
+        //Call your function that will display the cart items array
+        displayCart();
+      }
+
+      //load page
+      initialize();
+
+      //output the items to the div
+      function displayInventory() {
+        let output = "";
+
+        for (let i = 0; i < storeItems.length; i++) {
+          const item = storeItems[i];
+          output += `<div>${item.id} | ${item.name} | ${item.price} | ${item.quantityAvailable} | ${item.maxPerClient} | ${item.category} | <img src="${item.image}" height = "100" width = "100"/> <button onclick="addToCartButton(this)" id="${item.id}">Add to Cart</button> </div>`;
+        }
+        inventoryOutput.innerHTML = output;
+      }
+
+      //select item / show details section 
+      function showItemDetails() {
+        var selectedItemId = document.getElementById("addItemId").value;
+
+        var item = storeItems[selectedItemId - 1];
+
+        if (item) {
+          var selectOutputDiv = document.getElementById("selectOutput");
+          selectOutputDiv.innerHTML = ""; // clear previous content
+
+          var itemContainer = document.createElement("div");
+          itemContainer.classList.add("itemContainer");
+
+          var itemImg = document.createElement("p");
+          itemImg.innerHTML = `<img src="${item.image}" height="100" width="100"/>`;
+          itemContainer.appendChild(itemImg);
+
+          var itemInfo = document.createElement("div");
+          itemInfo.classList.add("itemInfo");
+
+          var itemName = document.createElement("h3");
+          itemName.innerText = item.name;
+          itemInfo.appendChild(itemName);
+
+          var productId = document.createElement("p");
+          productId.innerText = "Product Number: " + item.id;
+          itemInfo.appendChild(productId);
+
+          var itemDescription = document.createElement("p");
+          itemDescription.innerText = "Description: " + item.description;
+          itemInfo.appendChild(itemDescription);
+
+          var maxQuantity = document.createElement("p");
+          maxQuantity.innerText = "Maximum Quantity: " + item.maxPerClient;
+          itemInfo.appendChild(maxQuantity);
+
+          var quantityInStock = document.createElement("p");
+          quantityInStock.innerText = "In Stock: " + item.quantityAvailable;
+          itemInfo.appendChild(quantityInStock);
+
+          itemContainer.appendChild(itemInfo);
+
+          var reviews = item.reviews;
+          if (reviews.length > 0) {
+            var reviewContainer = document.createElement("div");
+            reviewContainer.classList.add("reviewContainer");
+
+            var totalRating = 0;
+            for (var i = 0; i < reviews.length; i++) {
+              var review = reviews[i];
+
+              var reviewDiv = document.createElement("div");
+              reviewDiv.classList.add("review");
+
+              var reviewName = document.createElement("p");
+              reviewName.innerText = "Customer Name: " + review.customerName;
+              reviewDiv.appendChild(reviewName);
+
+              var reviewDescription = document.createElement("p");
+              reviewDescription.innerText = 'Review: "' + review.description + '"';
+              reviewDiv.appendChild(reviewDescription);
+
+              var reviewRating = document.createElement("p");
+              reviewRating.innerText = "Rating: " + review.rating;
+              reviewDiv.appendChild(reviewRating);
+
+              reviewContainer.appendChild(reviewDiv);
+
+              totalRating += parseFloat(review.rating);
+            }
+
+            var averageRating = totalRating / reviews.length;
+            var averageRatingText = document.createElement("p");
+            averageRatingText.innerText = "Average rating: " + averageRating.toFixed(1);
+            reviewContainer.appendChild(averageRatingText);
+            itemContainer.appendChild(reviewContainer);
+          }
+
+          selectOutputDiv.appendChild(itemContainer);
+        }
+      }
+
+      function displayStoreItems() {
+        let html =
+          "<table><thead><tr><th>ID</th><th>Name</th><th>Price</th><th>Quantity Available</th><th>Max Per Client</th><th>Category</th><th>Image</th><th>Action</th></tr></thead><tbody>";
+
+        const currency = document.getElementById("currencyDropdown").value;
+        let conversionFactor = 1;
+        if (currency === "USD") {
+          conversionFactor = 0.74;
+        } else if (currency === "GOLD") {
+          conversionFactor = 400;
+        }
+
+        for (let i = 0; i < storeItems.length; i++) {
+          const item = storeItems[i];
+          const price = (item.price * conversionFactor).toFixed(2);
+          html += `<tr><td>${item.id}</td><td>${item.name}</td><td>${price} ${currency}</td><td>${item.quantityAvailable}</td><td>${item.maxPerClient}</td><td>${item.category}</td><td><img src="${item.image}" height="100" width="100"></td><td><button onclick="addToCartButton(this)" id="${item.id}">Add to Cart</button></td></tr>`;
+        }
+
+        html += "</tbody></table>";
+
+        document.getElementById("inventoryOutput").innerHTML = html;
+      }
+      function displayCertainStoreItems() {
+        let html =
+          "<table><thead><tr><th>ID</th><th>Name</th><th>Price</th><th>Quantity Available</th><th>Max Per Client</th><th>Category</th><th>Image</th><th>Action</th></tr></thead><tbody>";
+
+        for (let i = 0; i < storeItems.length; i++) {
+          const item = storeItems[i];
+          let e = document.getElementById("displayFilter");
+          let value = e.value;
+          let text = e.options[e.selectedIndex].text;
+
+          if (text == "All" || item.category == text) {
+            html += `<tr><td>${item.id}</td><td>${item.name}</td><td>${item.price}</td><td>${item.quantityAvailable}</td><td>${item.maxPerClient}</td><td>${item.category}</td><td><img src="${item.image}" height="100" width="100"></td><td><button onclick="addToCartButton(this)" id="${item.id}">Add to Cart</button></td></tr>`;
+          }
+        }
+
+        html += "</tbody></table>";
+
+        inventoryOutput.innerHTML = html;
+      }
+      //call on page load
+      displayStoreItems();
+      function addToCartButton(but) {
+        const itemId = but.id;
+        const quantity = 1;
+
+        // Find the item with the given ID in the store inventory
+        const item = storeItems.find((itemObj) => itemObj.id == itemId);
+
+        // Check if the item was found and the quantity is valid
+        if (!item) {
+          // Show an error message if the item was not found
+          const validationMessage = document.getElementById("addIDValidationMessage");
+          validationMessage.textContent = "Item not found";
+          return;
+        }
+        if (isNaN(quantity) || quantity <= 0 || quantity > item.quantityAvailable) {
+          // Show an error message if the quantity is not valid
+          const validationMessage = document.getElementById("addQtyValidationMessage");
+          validationMessage.textContent = "Invalid quantity";
+          return;
+        }
+
+        const currency = document.getElementById("currencyDropdown").value;
+        let conversionFactor = 1;
+        if (currency === "USD") {
+          conversionFactor = 0.74;
+        } else if (currency === "GOLD") {
+          conversionFactor = 400;
+        }
+
+        item.price = (item.price * conversionFactor).toFixed(2);
+        item.subtotal = (item.qty * item.price).toFixed(2);
+
+        // Check if the item is already in the cart
+        const itemInCart = cartItems.find((itemObjInCart) => itemObjInCart.item.id == itemId);
+
+        if (itemInCart) {
+          // Update the quantity if the item is already in the cart
+          item.qty += quantity;
+          item.subtotal = item.qty * item.price;
+        } else {
+          item.qty = quantity;
+          item.subtotal = item.qty * item.price;
+          // Add a new item to the cart if it is not already in the cart
+          cartItems.push({
+            item,
+          });
+        }
+
+        // Update the cart display
+        displayCart();
+      }
+
+      //add to cart function
+      function addToCart() {
+        // Get the item ID and quantity from the user input
+        const itemIdInput = document.getElementById("addItemId");
+        const quantityInput = document.getElementById("addItemQty");
+        const itemId = itemIdInput.value;
+        const quantity = parseInt(quantityInput.value);
+
+        // Find the item with the given ID in the store inventory
+        const item = storeItems.find((itemObj) => itemObj.id == itemId);
+
+        // Check if the item was found and the quantity is valid
+        if (!item) {
+          // Show an error message if the item was not found
+          const validationMessage = document.getElementById("addIDValidationMessage");
+          validationMessage.textContent = "Item not found";
+          return;
+        }
+        if (isNaN(quantity) || quantity <= 0 || quantity > item.quantityAvailable) {
+          // Show an error message if the quantity is not valid
+          const validationMessage = document.getElementById("addQtyValidationMessage");
+          validationMessage.textContent = "Invalid quantity";
+          return;
+        }
+
+        // Check if the item is already in the cart
+        const itemInCart = cartItems.find((itemObjInCart) => itemObjInCart.item.id == itemId);
+
+        if (itemInCart) {
+          // Update the quantity if the item is already in the cart
+          item.qty += quantity;
+          item.subtotal = item.qty * item.price;
+        } else {
+          item.qty = quantity;
+          item.subtotal = item.qty * item.price;
+          // Add a new item to the cart if it is not already in the cart
+          cartItems.push({
+            item,
+          });
+        }
+
+        itemIdInput.value = "";
+        quantityInput.value = "";
+        const idValidationMessage = document.getElementById("addIDValidationMessage");
+        idValidationMessage.textContent = "";
+        const qtyValidationMessage = document.getElementById("addQtyValidationMessage");
+        qtyValidationMessage.textContent = "";
+        // Update the cart display
+        displayCart();
+      }
+
+      //remove item from cart
+      function removeItem(id) {
+        for (let i = 0; i < cartItems.length; i++) {
+          if (cartItems[i].id === id) {
+            // Update the quantity available for the item in the store inventory
+            const storeItem = storeItems.find((item) => item.id === id);
+            storeItem.quantityAvailable += cartItems[i].quantity;
+
+            // Remove the item from the cart array
+            cartItems.splice(i, 1);
+
+            // Redraw the cart display
+            displayCart();
+            break;
+          }
+        }
+      }
+
+      function displayCart() {
+        let cartSubtotal = 0;
+        let output = "";
+
+        for (let i = 0; i < cartItems.length; i++) {
+          const item = cartItems[i];
+          const processingFee = item.item.processingFee;
+          const itemSubtotal = item.item.price * item.item.qty + processingFee;
+          item.item.subtotal = itemSubtotal;
+
+          cartSubtotal += itemSubtotal;
+
+          output += `<div>${item.item.id} | ${item.item.price} | ${item.item.qty} | ${
+            item.item.processingFee
+          } | ${itemSubtotal.toFixed(2)}</div>`;
+        }
+
+        const taxAmount = cartSubtotal * 0.13;
+        const cartTotal = cartSubtotal + taxAmount;
+
+        output += `<div>Subtotal: ${cartSubtotal.toFixed(2)}</div>`;
+        output += `<div>Tax: ${taxAmount.toFixed(2)}</div>`;
+        output += `<div>Total: ${cartTotal.toFixed(2)}</div>`;
+
+        cartOutput.innerHTML = output;
+      }
+
+      //currency filter
+      // Get the store items
+      storeItems = document.querySelectorAll(".storeItem");
+
+      // Loop through the store items and update the prices
+      storeItems.forEach(function (item) {
+        // Get the price element and the price string
+        let priceElement = item.querySelectorAll(".price");
+        let priceString = priceElement.innerText;
+
+        // Parse the price string and convert it to the selected currency
+        let price = parseFloat(priceString.slice(4));
+        let newPrice = convertCurrency(price, currency);
+
+        // Update the price element with the new price
+        priceElement.innerText = `${currency} ${newPrice.toFixed(2)}`;
+      });
+
+      function updateCurrency() {
+        let currencySelector = document.getElementById("currencySelector");
+        let currency = currencySelector.value;
+        let storeItems = document.querySelectorAll(".item");
+
+        // loop through store items and update prices
+        storeItems.forEach(function (item) {
+          let priceElement = item.querySelector(".price");
+          let priceString = priceElement.innerText;
+          let price = parseFloat(priceString);
+          let newPrice = convertCurrency(price, currency);
+
+          if (currencySelector === "USD") {
+          }
+
+          priceElement.innerText = `${currency} ${newPrice.toFixed(2)}`;
+        });
+      }
+
+      //leave review function
+      function leaveItemReview() {
+        const reviewId = document.getElementById("reviewId").value;
+        const reviewItem = storeItems[reviewId - 1];
+
+        const customerName = document.getElementById("customerNameInput").value;
+        const leaveRating = document.getElementById("leaveRatingInput").value;
+        const leaveReview = document.getElementById("leaveReviewInput").value;
+
+        if (customerName === "" || leaveReview === "" || leaveRating === "") {
+          const validationMessage = document.createElement("p");
+          validationMessage.innerText = "Please fill out all fields.";
+          document.getElementById("addRatingValidationMessage").innerHTML = "";
+          document.getElementById("addRatingValidationMessage").appendChild(validationMessage);
+        } else {
+          const validationMessage = document.createElement("p");
+          validationMessage.innerText = "Thank you for your input";
+          document.getElementById("addRatingValidationMessage").innerHTML = "";
+          document.getElementById("addRatingValidationMessage").appendChild(validationMessage);
+
+          const review = {
+            customerName: customerName,
+            rating: leaveRating,
+            description: leaveReview,
+          };
+
+          // Push the new review onto the reviews array for the item
+          reviewItem.reviews.push(review);
+
+          // Clear the input fields
+          document.getElementById("reviewId").value = "";
+          document.getElementById("customerNameInput").value = "";
+          document.getElementById("leaveRatingInput").value = "";
+          document.getElementById("leaveReviewInput").value = "";
+
+          // Update the item details display to show the new review
+          showItemDetails();
+        }
+
+        return;
+      }
+    </script>
+  </body>
+</html>
