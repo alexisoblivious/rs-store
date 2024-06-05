@@ -7,39 +7,65 @@
     <title>Grand Exchange</title>
     <style>
       body {
-        font-family: Arial, sans-serif;
+        font-family: "Garamond", serif;
         background-color: #f4f4f4;
         margin: 0;
         padding: 0;
+        overflow-x: hidden;
       }
       header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background-color: #333;
+        background-color: #3e2723;
         color: white;
-        padding: 10px;
+        padding: 10px 20px;
+        box-sizing: border-box;
+        position: fixed;
+        top: 0;
+        width: 100%;
+        z-index: 1000;
       }
       header h1 {
         margin: 0;
+        font-family: "MedievalSharp", cursive;
       }
-      header button {
-        background-color: #555;
+      header button,
+      header select {
+        background-color: #6d4c41;
         color: white;
         border: none;
         padding: 10px;
         cursor: pointer;
+        font-family: "Garamond", serif;
+      }
+      header select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        padding-right: 30px;
+        background: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMiAxMiI+PHBhdGggZD0iTTEuNzA2IDMuMjkzbDUuMTQ3IDUuMTQ2IDUuMTQ3LTUuMTQ2MS42OTIuNjkyTDYuODUzIDkuODY3Yy0uMTIuMTItLjMwNi4xOC0uNDkyLjE4LS4xODUgMC0uMzczLS4wNi0uNDkzLS4xOEwuMDE1IDMuOTg1bC42OTEtLjY5MnoiLz48L3N2Zz4=")
+          no-repeat right #6d4c41;
+        background-size: 12px;
       }
       #main-content {
         margin: 20px;
+        max-width: 1200px;
+        padding: 80px 20px 20px 20px; /* Add padding top for fixed header */
+        background-color: #fff3e0;
+        border: 1px solid #ddd;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        box-sizing: border-box;
+        margin-left: auto;
+        margin-right: auto;
       }
       #item-display,
       #inventory {
         border: 1px solid #ddd;
         padding: 20px;
-        background-color: white;
+        background-color: #fff3e0;
         margin-bottom: 20px;
-        width: 100%;
+        box-sizing: border-box;
       }
       #item-display img {
         max-width: 100%;
@@ -47,17 +73,19 @@
       #cart {
         border: 1px solid #ddd;
         padding: 20px;
-        background-color: white;
+        background-color: #fff3e0;
         display: none;
-        position: absolute;
+        position: fixed;
         right: 20px;
         top: 60px;
         width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
       }
       .item-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
+        gap: 20px;
       }
       .item-grid .item {
         border: 1px solid #ddd;
@@ -66,15 +94,28 @@
         flex-direction: column;
         align-items: center;
         justify-content: space-between;
-        height: 200px; /* Ensures uniform grid item height */
+        height: 300px; /* Increase height to accommodate low stock message */
         box-sizing: border-box; /* Ensures padding is included in height */
+        background-color: #f5f5f5;
       }
       .item-grid .item img {
         max-width: 100px;
         max-height: 100px;
       }
-      .toggle-button {
-        margin-top: 10px;
+      .toggle-button,
+      .item-grid button,
+      #review-form input[type="button"],
+      #cart button {
+        background-color: #6d4c41;
+        color: white;
+        border: none;
+        padding: 10px;
+        cursor: pointer;
+        font-family: "Garamond", serif;
+      }
+      .item-grid .item div {
+        width: 100%;
+        text-align: center;
       }
       .warning {
         color: red;
@@ -90,16 +131,39 @@
         margin: 5px 0;
         box-sizing: border-box;
       }
-      #review-form input[type="button"] {
-        padding: 10px;
-        margin: 5px 0;
-      }
       #reviews {
         margin-top: 20px;
       }
       .cart-item-warning {
         font-size: 0.8em;
         color: red;
+      }
+      footer {
+        background-color: #3e2723;
+        color: white;
+        text-align: center;
+        padding: 10px 20px;
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        z-index: 1000;
+      }
+      footer p {
+        margin: 0;
+        font-family: "Garamond", serif;
+      }
+      .spaced-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .cart-remove-button {
+        background-color: #b71c1c;
+        color: white;
+        padding: 5px 10px;
+        font-size: 0.8em;
+        cursor: pointer;
+        margin: 0 2px;
       }
     </style>
   </head>
@@ -143,16 +207,20 @@
               id="addRatingValidationMessage"></span>
           </p>
           <p>Review: <input type="text" id="leaveReviewInput" size="100" /></p>
-          <p>
+          <div class="spaced-buttons">
             <input
               type="button"
               value="Submit Review"
               onclick="leaveItemReview()" />
             <input type="button" value="Cancel" onclick="cancelReview()" />
-          </p>
+          </div>
         </div>
-        <button onclick="previousItem()" class="toggle-button">Previous</button>
-        <button onclick="nextItem()" class="toggle-button">Next</button>
+        <div class="spaced-buttons">
+          <button onclick="previousItem()" class="toggle-button">
+            Previous
+          </button>
+          <button onclick="nextItem()" class="toggle-button">Next</button>
+        </div>
       </div>
       <div id="inventory">
         <h2>Inventory</h2>
@@ -161,6 +229,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding-bottom: 10px;
           ">
           <select id="displayFilter" onchange="displayFilteredItems()">
             <option>All</option>
@@ -175,9 +244,13 @@
     <div id="cart">
       <h2>Your Cart</h2>
       <div id="cartOutput"></div>
-      <button onclick="checkout()">Checkout</button>
+      <div id="cartTotal"></div>
+      <button id="checkoutButton" onclick="checkout()">Checkout</button>
       <div id="checkoutMessage"></div>
     </div>
+    <footer>
+      <p>&copy; 2024 Alexis Piercey</p>
+    </footer>
 
     <script>
       // Global variables
@@ -498,7 +571,7 @@
         const selectedItemDiv = document.getElementById("selected-item");
         const averageRating = calculateAverageRating(item.reviews);
         const warning =
-          item.quantityAvailable < 5
+          item.quantityAvailable < 10
             ? `<p class="warning">Only ${item.quantityAvailable} left in stock!</p>`
             : "";
         selectedItemDiv.innerHTML = `
@@ -661,6 +734,11 @@
         const item = storeItems.find((item) => item.id === itemId);
         const cartItem = cart.find((ci) => ci.item.id === itemId);
 
+        const checkoutMessage = document.getElementById("checkoutMessage");
+        if (checkoutMessage) {
+          checkoutMessage.innerHTML = "";
+        }
+
         if (
           item &&
           (cartItem
@@ -681,7 +759,13 @@
       // Display the cart items
       function displayCart() {
         const cartOutputDiv = document.getElementById("cartOutput");
+        const cartTotalDiv = document.getElementById("cartTotal");
+        const checkoutButton = document.getElementById("checkoutButton");
+        const checkoutMessage = document.getElementById("checkoutMessage");
+
         cartOutputDiv.innerHTML = "";
+        cartTotalDiv.innerHTML = "";
+        checkoutMessage.innerHTML = "";
         let total = 0;
         cart.forEach((cartItem) => {
           const itemTotal = cartItem.item.price * cartItem.quantity;
@@ -697,9 +781,42 @@
             cartItem.item.price
           } = ${itemTotal.toFixed(2)}</p>
                     ${warning}
+                    <button class="cart-remove-button" onclick="removeOneCartItem(${
+                      cartItem.item.id
+                    })">Remove One</button>
+                    <button class="cart-remove-button" onclick="removeAllCartItem(${
+                      cartItem.item.id
+                    })">Remove All</button>
                 `;
         });
-        cartOutputDiv.innerHTML += `<p>Total: ${total.toFixed(2)}</p>`;
+        if (total > 0) {
+          cartTotalDiv.innerHTML = `<p>Total: ${total.toFixed(2)}</p>`;
+          checkoutButton.style.display = "block";
+        } else {
+          checkoutButton.style.display = "none";
+          if (cart.length === 0) {
+            cartOutputDiv.innerHTML = "<p>Your cart is empty</p>";
+          }
+        }
+      }
+
+      // Remove one instance of an item from the cart
+      function removeOneCartItem(itemId) {
+        const cartItem = cart.find((ci) => ci.item.id === itemId);
+        if (cartItem) {
+          if (cartItem.quantity > 1) {
+            cartItem.quantity -= 1;
+          } else {
+            cart = cart.filter((ci) => ci.item.id !== itemId);
+          }
+          displayCart();
+        }
+      }
+
+      // Remove all instances of an item from the cart
+      function removeAllCartItem(itemId) {
+        cart = cart.filter((ci) => ci.item.id !== itemId);
+        displayCart();
       }
 
       // Checkout and confirm purchase
@@ -712,8 +829,10 @@
         displayCart();
         displayInventory();
         displayItem(currentItemIndex);
-        document.getElementById("checkoutMessage").innerText =
-          "Thank you for your purchase!";
+        const checkoutMessage = document.getElementById("checkoutMessage");
+        checkoutMessage.innerHTML = "Thank you for your purchase!";
+        document.getElementById("cartTotal").innerHTML = "";
+        document.getElementById("checkoutButton").style.display = "none";
       }
 
       // Convert currency
