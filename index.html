@@ -68,7 +68,9 @@
         box-sizing: border-box;
       }
       #item-display img {
-        max-width: 100%;
+        height: 120px;
+        width: auto;
+        object-fit: cover;
       }
       #cart {
         border: 1px solid #ddd;
@@ -637,20 +639,24 @@
         reviewForm.style.display = "none";
       }
 
-      // Show the previous item
-      function previousItem() {
-        if (currentItemIndex > 0) {
-          currentItemIndex--;
-          displayItem(currentItemIndex);
-        }
-      }
-
       // Show the next item
       function nextItem() {
         if (currentItemIndex < filteredItems.length - 1) {
           currentItemIndex++;
-          displayItem(currentItemIndex);
+        } else {
+          currentItemIndex = 0; // Reset to the first item
         }
+        displayItem(currentItemIndex);
+      }
+
+      // Show the previous item (wrap around)
+      function previousItem() {
+        if (currentItemIndex > 0) {
+          currentItemIndex--;
+        } else {
+          currentItemIndex = filteredItems.length - 1; // Go to the last item
+        }
+        displayItem(currentItemIndex);
       }
 
       // Toggle cart visibility
